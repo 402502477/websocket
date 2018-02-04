@@ -244,14 +244,22 @@ class Socket{
                 $msg = socket_strerror($code);
             }
         }
+        if(!is_dir(__DIR__.'/log'))
+        {
+            mkdir(__DIR__.'/log');
+        }
         $error_text = '['.date('Y-m-d H:i:s').']'.$msg."\n";
-        file_put_contents('error.log',$error_text,FILE_APPEND);
+        file_put_contents(__DIR__.'/log/error.log',$error_text,FILE_APPEND);
 
     }
     protected function runtime($msg,$type)
     {
+        if(!is_dir(__DIR__.'/log'))
+        {
+            mkdir(__DIR__.'/log');
+        }
         $test = '['.date('Y-m-d H:i:s').']'.$type.':'.$msg."\n";
-        file_put_contents('runtime.log',$test,FILE_APPEND);
+        file_put_contents(__DIR__.'/log/runtime.log',$test,FILE_APPEND);
     }
 }
 $host = '127.0.0.1';
