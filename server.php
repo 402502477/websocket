@@ -75,16 +75,23 @@ class Socket{
                 //通过socket获取数据执行handshake
                 $header = socket_read($new_socket,1024);
                 $this->perform_handshaking($header,$new_socket,$this->host,$this->port);
-                socket_getpeername($new_socket, $ip);
+                $res = socket_getpeername($new_socket, $ip);
+                if($res)
+                {
+                    $this->runtime($ip,'online');
+                }
+
                 $response = $this->mask(json_encode([
                     'type' => 'system',
-                    'ip' => $ip,
+                    'message' => $ip,
                 ]));
 
                 $res = $this->send_message($response);
                 if($res !== true)
                 {
                     $this->error('Send message failed : ','socket');
+                }else{
+                    $this->runtime('Push message succeed','Send message');
                 }
                 $found_socket = array_search($this->socket, $chanel);
                 unset($chanel[$found_socket]);
@@ -92,29 +99,39 @@ class Socket{
 
             foreach($chanel as $socket)
             {
-                while(socket_recv($socket,$buf,1024,0) >= 1)
+                while(@socket_recv($socket,$buf,1024,0) >= 1)
                 {
+                    $user_name = $user_message = null;
                     //解码发送过来的数据
                     $received_text = $this->unmask($buf);
-                    $tst_msg = json_decode($received_text);
-                    $user_name = $tst_msg->name;
-                    $user_message = $tst_msg->message;
+                    $tst_msg = json_decode($received_text,true);
+                    if($tst_msg)
+                    {
+                        $user_name = $tst_msg['name'];
+                        $user_message = $tst_msg['message'];
+                    }
 
                     //把消息发送回所有连接的 client 上去
-                    $response_text = mask(json_encode(array('type'=>'usermsg', 'name'=>$user_name, 'message'=>$user_message)));
-                    send_message($response_text);
+                    $response_text = $this->mask(json_encode(array('type'=>'usermsg', 'name'=>$user_name, 'message'=>$user_message)));
+                    $res = $this->send_message($response_text);
+                    if($res !== true)
+                    {
+                        $this->error('Send message failed : ','socket');
+                    }else{
+                        $this->runtime('Send Message','Send message');
+                    }
                     break 2;
                 }
 
                 //检查offline的client
                 $buf = @socket_read($socket, 1024, PHP_NORMAL_READ);
-                echo $buf;
                 if ($buf === false) {
                     $found_socket = array_search($socket, $this->sockets);
-                    socket_getpeername($socket, $ip);
+                    @socket_getpeername($socket, $ip);
                     unset($this->sockets[$found_socket]);
-                    $response = mask(json_encode(array('type'=>'system', 'message'=>$ip.' disconnected')));
-                    send_message($response);
+                    $this->runtime($ip.' disconnected','offline');
+                    $response = $this->mask(json_encode(array('type'=>'system', 'message'=>$ip.' disconnected')));
+                    $this->send_message($response);
                 }
             }
 
@@ -227,11 +244,16 @@ class Socket{
                 $msg = socket_strerror($code);
             }
         }
-        $error_text = '['.date('Y-m-d H:i:s').']'.$msg;
+        $error_text = '['.date('Y-m-d H:i:s').']'.$msg."\n";
         file_put_contents('error.log',$error_text,FILE_APPEND);
 
     }
+    protected function runtime($msg,$type)
+    {
+        $test = '['.date('Y-m-d H:i:s').']'.$type.':'.$msg."\n";
+        file_put_contents('runtime.log',$test,FILE_APPEND);
+    }
 }
 $host = '127.0.0.1';
-$port = 80;
+$port = 3301;
 $ws = new Socket($host,$port);

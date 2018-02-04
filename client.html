@@ -86,7 +86,7 @@
 <script src="https://cdn.bootcss.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 <script>
     $(function(){
-        var wsurl = 'ws://127.0.0.1:9000';
+        var wsurl = 'ws://127.0.0.1:3301';
         var websocket;
         var i = 0;
         if(window.WebSocket){
@@ -99,7 +99,6 @@ console.log(websocket);
             }
             //收到消息
             websocket.onmessage = function(event) {
-                console.log(event);
                 var msg = JSON.parse(event.data); //解析收到的json消息数据
 
                 var type = msg.type; // 消息类型
@@ -110,7 +109,7 @@ console.log(websocket);
                     $('.show-area').append('<p class="bg-success message"><i class="glyphicon glyphicon-user"></i><a name="'+i+'"></a><span class="label label-primary">'+uname+' say: </span>'+umsg+'</p>');
                 }
                 if(type == 'system'){
-                    $('.show-area').append('<p class="bg-warning message"><a name="'+i+'"></a><i class="glyphicon glyphicon-info-sign"></i>'+umsg+'</p>');
+                    $('.show-area').append('<p class="bg-warning message"><a name="'+i+'"></a><i class="glyphicon glyphicon-info-sign"></i>'+umsg+' online</p>');
                 }
 
                 $('#message').val('');
