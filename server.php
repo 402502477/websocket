@@ -118,7 +118,7 @@ class Socket{
                                 $this->sockets[(int)$new_socket]['name'] = $client_msg['user'];
                                 $user_type = $client_msg['type'];
                                 $user_name = $client_msg['user'];
-                                $user_message = $client_msg['message'];
+                                $user_message = $client_msg['message'] ? $client_msg['message'] : '';
                                 $user_list[] = $client_msg['user'];
                                 break;
                             case 'user_msg':
