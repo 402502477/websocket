@@ -1,4 +1,20 @@
 @charset "utf-8";
+@media screen and (max-width: 769px){
+    .left{
+        display: none;
+    }
+    .right {
+        margin-left: 0;
+    }
+}
+@media screen and (min-width: 770px){
+    .left{
+        display: block;
+    }
+    .right {
+        margin-left: 200px;
+    }
+}
 html, body {
     min-height: 100%;
     height: 100%;
@@ -19,27 +35,134 @@ body {
 .left .user-block{
     width: 100%;
     height: 100%;
+    border-top: 1px solid #eee;
+    box-shadow: #0f0f0f 0 0 1px;
 }
-.user-block .line{
-
-}
+/* chat */
 .right{
     height: 100%;
-    margin-left: 200px;
     box-sizing: border-box;
     position: relative;
+}
+.right .title{
+    position: absolute;
+    top: 0;
+    width: 100%;
+    background: #fff;
+    border:1px solid #eee;
+    height: 40px;
+}
+.right .title p{
+    color:#000;
+    font: 400 15px/40px '微软雅黑';
+    padding: 0 10px;
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: right;
+}
+.right .title .toggle{
+    float: left;
+    margin: 5px;
+    cursor: pointer;
+    padding: 5px;
+    box-shadow: #999 0 0 1px;
+    color: #777;
+}
+.right .chat-block{
+    width: 100%;
+    height: 100%;
+    padding: 40px 15px 34px 15px;
+    box-sizing: border-box;
+    background: #eee;
+    overflow-y: scroll;
 }
 .right .input-block{
     position: absolute;
     bottom: 0;
-    height: 120px;
     width: 100%;
-    background: #eee;
 }
-.right .chat-block{
-    background: #2aabd2;
-    width: 100%;
-    height: 100%;
-    padding-bottom: 120px;
+/* user-block */
+.user-block .line{
     box-sizing: border-box;
+    padding: 20px 0;
+    width: 100%;
+    height: 80px;
+    cursor:pointer;
+}
+.line .picture{
+    float: left;
+    width: 60px;
+    height: 100%;
+    box-sizing: border-box;
+    padding-left: 5px;
+}
+.picture img{
+    width: 40px;
+    height: 40px;
+    border-radius: 40px;
+    box-shadow: #999 0 0 3px;
+}
+.line .nickname{
+    float: left;
+    width: 100px;
+    height: 50%;
+    box-sizing: border-box;
+    font: normal 14px '微软雅黑';
+    color:#333;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.line .conversation{
+    float: left;
+    width: 130px;
+    height: 50%;
+    box-sizing: border-box;
+    font: normal 13px '微软雅黑';
+    color:#999;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.line:hover{
+    background: #ddd;
+}
+/* chat-block */
+.chat-block .chat-block-right{
+    margin: 10px 0;
+    height: 30px;
+    text-align: right;
+    width: 100%;
+    box-sizing: border-box;
+}
+.chat-block .chat-block-left{
+    margin: 10px 0;
+    height: 30px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.chat-block span{
+    display: block;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+.chat-block .chat-block-right span{
+    color:#fff;
+    float: right;
+    background: #53c8ff;
+}
+.chat-block .chat-block-left span{
+    float: left;
+    background: #fff;
+}
+.chat-block .time-line{
+    overflow: hidden;
+    white-space: nowrap;
+    color:#999;
+    text-align: center;
+    margin: 4px 0;
+    font-size: 12px;
+    font-family: 'Arial';
+}
+#login_block{
+    background: #aaa;
 }

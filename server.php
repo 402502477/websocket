@@ -44,7 +44,7 @@ class Socket{
         socket_listen($this->socket)or $this->error('Socket set option failed:','socket');
 
         //将创建完毕的套接字放进数组
-        $this->sockets[] = $this->socket;
+        $this->sockets[0] = ['resource' => $this->socket];
     }
 
     /**
@@ -52,11 +52,14 @@ class Socket{
      */
     public function process()
     {
+        //定义当前连接用户列表
+        $user_list = [];
+
         //创建循环,保持连接状态
         while(true)
         {
             //将当前的套接字绑定进入独立的频道
-            $chanel = $this->sockets;
+            $chanel = array_column($this->sockets, 'resource');
             //select作为监视函数,参数分别是(监视可读,可写,异常,超时时间),返回可操作数目,出错时返回false;
             $select_res = socket_select($chanel,$write,$except,0,10);
             if($select_res === false)
@@ -70,7 +73,6 @@ class Socket{
             {
                 //接受套接字的连接
                 $new_socket = socket_accept($this->socket);
-                $this->sockets[] = $new_socket;
 
                 //通过socket获取数据执行handshake
                 $header = socket_read($new_socket,1024);
@@ -79,6 +81,9 @@ class Socket{
                 if($res)
                 {
                     $this->runtime($ip,'online');
+                    $this->sockets[(int)$new_socket]['resource'] = $new_socket;
+                    $this->sockets[(int)$new_socket]['ip'] = $ip;
+                    $this->sockets[(int)$new_socket]['login_time'] = date('Y-m-d H:i:s');
                 }
 
                 $response = $this->mask(json_encode([
@@ -101,18 +106,37 @@ class Socket{
             {
                 while(@socket_recv($socket,$buf,1024,0) >= 1)
                 {
-                    $user_name = $user_message = null;
+                    $user_name = $user_message = $user_type = null;
+
                     //解码发送过来的数据
                     $received_text = $this->unmask($buf);
-                    $tst_msg = json_decode($received_text,true);
-                    if($tst_msg)
+                    $client_msg = json_decode($received_text,true);
+                    if($client_msg)
                     {
-                        $user_name = $tst_msg['name'];
-                        $user_message = $tst_msg['message'];
-                    }
+                        switch ($client_msg['type']){
+                            case 'login':
+                                $this->sockets[(int)$new_socket]['name'] = $client_msg['user'];
+                                $user_type = $client_msg['type'];
+                                $user_name = $client_msg['user'];
+                                $user_message = $client_msg['message'];
+                                $user_list[] = $client_msg['user'];
+                                break;
+                            case 'user_msg':
+                                $user_type = $client_msg['type'];
+                                $user_name = $client_msg['user'];
+                                $user_message = $client_msg['message'];
+                                break;
+                        }
 
+                    }
                     //把消息发送回所有连接的 client 上去
-                    $response_text = $this->mask(json_encode(array('type'=>'usermsg', 'name'=>$user_name, 'message'=>$user_message)));
+                    sort($user_list);
+                    $response_text = $this->mask(json_encode([
+                        'type' => $user_type,
+                        'user' => $user_name,
+                        'message' => $user_message,
+                        'user_list' => $user_list
+                    ]));
                     $res = $this->send_message($response_text);
                     if($res !== true)
                     {
@@ -126,15 +150,24 @@ class Socket{
                 //检查offline的client
                 $buf = @socket_read($socket, 1024, PHP_NORMAL_READ);
                 if ($buf === false) {
-                    $found_socket = array_search($socket, $this->sockets);
                     @socket_getpeername($socket, $ip);
-                    unset($this->sockets[$found_socket]);
+                    unset($user_list[array_search($this->sockets[(int)$socket]['name'],$user_list)]);
+                    sort($user_list);
+                    unset($this->sockets[(int)$socket]);
+                    //重组user list列表
+                    $response_text = $this->mask(json_encode([
+                        'type' => 'logout',
+                        'user' => '',
+                        'message' => '',
+                        'user_list' => $user_list
+                    ]));
+                    $this->send_message($response_text);
+
                     $this->runtime($ip.' disconnected','offline');
                     $response = $this->mask(json_encode(array('type'=>'system', 'message'=>$ip.' disconnected')));
                     $this->send_message($response);
                 }
             }
-
         }
     }
 
@@ -145,7 +178,8 @@ class Socket{
      */
     function send_message($msg)
     {
-        foreach($this->sockets as $socket)
+        $chanel = array_column($this->sockets,'resource');
+        foreach($chanel as $socket)
         {
             @socket_write($socket,$msg,strlen($msg));
         }
