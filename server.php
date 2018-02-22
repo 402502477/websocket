@@ -303,6 +303,6 @@ class Socket{
         file_put_contents(__DIR__.'/log/runtime.log',$test,FILE_APPEND);
     }
 }
-$host = '127.0.0.1';
-$port = 3301;
-$ws = new Socket($host,$port);
+$config = file_get_contents('config.json');
+$host =json_decode($config,true);
+$ws = new Socket($host['server_host'],$host['port']);
