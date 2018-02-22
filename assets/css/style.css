@@ -154,6 +154,10 @@ body {
     float: left;
     background: #fff;
 }
+.chat-block-nickname{
+    margin: 0 0 5px 0;
+    color: #999;
+}
 .chat-block .time-line{
     overflow: hidden;
     white-space: nowrap;

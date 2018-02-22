@@ -21,6 +21,9 @@ class Socket{
         $this->process();
     }
 
+    /**
+     *析构函数 关闭套接字
+     */
     function __destruct()
     {
         socket_close($this->socket);
@@ -77,19 +80,21 @@ class Socket{
                 //通过socket获取数据执行handshake
                 $header = socket_read($new_socket,1024);
                 $this->perform_handshaking($header,$new_socket,$this->host,$this->port);
+                //获得套接字的ip地址
                 $res = socket_getpeername($new_socket, $ip);
                 if($res)
                 {
                     $this->runtime($ip,'online');
+                    //为新加入的socket绑定基本信息
                     $this->sockets[(int)$new_socket]['resource'] = $new_socket;
                     $this->sockets[(int)$new_socket]['ip'] = $ip;
                     $this->sockets[(int)$new_socket]['login_time'] = date('Y-m-d H:i:s');
                 }
 
-                $response = $this->mask(json_encode([
+                $response = [
                     'type' => 'system',
-                    'message' => $ip,
-                ]));
+                    'content' => $ip,
+                ];
 
                 $res = $this->send_message($response);
                 if($res !== true)
@@ -104,67 +109,68 @@ class Socket{
 
             foreach($chanel as $socket)
             {
-                while(@socket_recv($socket,$buf,1024,0) >= 1)
+                $res = @socket_recv($socket,$buf,1024,0);
+                while($res >= 1)
                 {
-                    $user_name = $user_message = $user_type = null;
+                    $response = null;
 
                     //解码发送过来的数据
-                    $received_text = $this->unmask($buf);
-                    $client_msg = json_decode($received_text,true);
-                    if($client_msg)
+                    $request = json_decode($this->unmask($buf),true);
+                    if($request)
                     {
-                        switch ($client_msg['type']){
+                        switch ($request['type']){
                             case 'login':
-                                $this->sockets[(int)$new_socket]['name'] = $client_msg['user'];
-                                $user_type = $client_msg['type'];
-                                $user_name = $client_msg['user'];
-                                $user_message = $client_msg['message'] ? $client_msg['message'] : '';
-                                $user_list[] = $client_msg['user'];
+                                //写入变量$user_list
+                                $user_list[] = $request['user'];
+                                sort($user_list);
+                                //登陆请求
+                                $this->sockets[(int)$socket]['name'] = $request['user'];
+                                $response['type'] = $request['type'];
+                                $response['user'] = $request['user'];
+                                $response['user_list'] = $user_list;
                                 break;
-                            case 'user_msg':
-                                $user_type = $client_msg['type'];
-                                $user_name = $client_msg['user'];
-                                $user_message = $client_msg['message'];
+                            case 'IM':
+                                //即时通讯请求
+                                $response['type'] = $request['type'];
+                                $response['user'] = $request['user'];
+                                $response['content'] = $request['content'];
                                 break;
                         }
 
+                        $res = $this->send_message($response);
+                        if($res !== true)
+                        {
+                            $this->error('Send message failed : ','socket');
+                        }else{
+                            $this->runtime('Send Message','Send message');
+                        }
                     }
-                    //把消息发送回所有连接的 client 上去
-                    sort($user_list);
-                    $response_text = $this->mask(json_encode([
-                        'type' => $user_type,
-                        'user' => $user_name,
-                        'message' => $user_message,
-                        'user_list' => $user_list
-                    ]));
-                    $res = $this->send_message($response_text);
-                    if($res !== true)
-                    {
-                        $this->error('Send message failed : ','socket');
-                    }else{
-                        $this->runtime('Send Message','Send message');
-                    }
+
                     break 2;
                 }
 
                 //检查offline的client
                 $buf = @socket_read($socket, 1024, PHP_NORMAL_READ);
                 if ($buf === false) {
-                    @socket_getpeername($socket, $ip);
+
+                    $ip = $this->sockets[(int)$socket]['ip'];
                     unset($user_list[array_search($this->sockets[(int)$socket]['name'],$user_list)]);
-                    sort($user_list);
                     unset($this->sockets[(int)$socket]);
+
                     //重组user list列表
-                    $response_text = $this->mask(json_encode([
+                    sort($user_list);
+                    $response = [
                         'type' => 'logout',
-                        'user' => '',
-                        'message' => '',
                         'user_list' => $user_list
-                    ]));
-                    $this->send_message($response_text);
+                    ];
+                    $this->send_message($response);
 
                     $this->runtime($ip.' disconnected','offline');
-                    $response = $this->mask(json_encode(array('type'=>'system', 'message'=>$ip.' disconnected')));
+
+                    $response = [
+                        'type'=>'system',
+                        'content'=>$ip.' disconnected'
+                    ];
                     $this->send_message($response);
                 }
             }
@@ -178,6 +184,7 @@ class Socket{
      */
     function send_message($msg)
     {
+        $msg = $this->mask(json_encode($msg));
         $chanel = array_column($this->sockets,'resource');
         foreach($chanel as $socket)
         {

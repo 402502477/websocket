@@ -5,7 +5,6 @@ $(function(){
 
         var wsurl = 'ws://127.0.0.1:3301';
         var websocket;
-        var i = 0;
         if(window.WebSocket && nickname){
             //关闭用户信息输入框
             $('#login_block').attr('style','');
@@ -16,12 +15,10 @@ $(function(){
             //连接建立
             websocket.onopen = function(evevt){
                 send('login',nickname);
-                console.log(evevt);
             };
             //收到消息
             websocket.onmessage = function(event) {
                 var msg = JSON.parse(event.data); //解析收到的json消息数据
-                console.log(msg);
                 if(msg.type === 'login' || msg.type === 'logout'){
                     var html = '';
                     for(var id=0;id < msg.user_list.length ;id++)
@@ -35,37 +32,36 @@ $(function(){
                     $('.user-block').html(html);
                 }
                 if(msg.type === 'system'){
-                    $('.chat-block').append('<p class="bg-warning message"><a name="'+i+'"></a><i class="glyphicon glyphicon-info-sign"></i>'+msg.message+' online</p>');
+                    $('.chat-block').append('<p class="bg-warning message"><a name=""></a><i class="glyphicon glyphicon-info-sign"></i>'+msg.content+' online</p>');
                 }
-                if(msg.type === 'user_msg' && msg.user !== nickname){
+                if(msg.type === 'IM' && msg.user !== nickname){
                     $('.chat-block').append(
                         '<div class="chat-block-left">' +
-                        '<span>'+ msg.message +'</span>' +
+                        '<p class="chat-block-nickname">'+ nickname +'</p>' +
+                        '<span>'+ msg.content +'</span>' +
                         '</div>'
                     );
                 }
             };
 
             //发生错误
-            websocket.onerror = function(event){
-
+            websocket.onerror = function(){
                 console.log("Connected to WebSocket server error");
-                $('.show-area').append('<p class="bg-danger message"><a name="'+i+'"></a><i class="glyphicon glyphicon-info-sign"></i>Connect to WebSocket server error.</p>');
+                $('.chat-block').append('<p class="bg-danger message"><a name=""></a><i class="glyphicon glyphicon-info-sign"></i>Connect to WebSocket server error.</p>');
 
             };
 
             //连接关闭
-            websocket.onclose = function(event){
-                send('logout','','');
+            websocket.onclose = function(){
                 console.log('websocket Connection Closed. ');
-                $('.show-area').append('<p class="bg-warning message"><a name="'+i+'"></a><i class="glyphicon glyphicon-info-sign"></i>websocket Connection Closed.</p>');
+                $('.chat-block').append('<p class="bg-warning message"><a name=""></a><i class="glyphicon glyphicon-info-sign"></i>websocket Connection Closed.</p>');
             };
 
-            function send(type , user , message){
+            function send(type , user , content){
                 var msg = {
                     type: type,
                     user: user,
-                    message: message
+                    content: content
                 };
                 try{
                     websocket.send(JSON.stringify(msg));
@@ -78,9 +74,12 @@ $(function(){
             $(window).keydown(function(event){
                 if(event.keyCode == 13){
                     var message = $('#input_message').val();
-                    console.log(message);
-                    console.log('user enter');
-                    send('user_msg',nickname,message);
+                    if(!message)
+                    {
+                        alert('请先键入内容');
+                        return;
+                    }
+                    send('IM',nickname,message);
                     $('#input_message').val('');
                     $('.chat-block').append(
                         '<div class="chat-block-right">' +
@@ -93,7 +92,12 @@ $(function(){
             //点发送按钮发送消息
             $('#send').bind('click',function(){
                 var message = $('#input_message').val();
-                send('user_msg',nickname,message);
+                if(!message)
+                {
+                    alert('请先键入内容');
+                    return;
+                }
+                send('IM',nickname,message);
                 $('#input_message').val('');
                 $('.chat-block').append(
                     '<div class="chat-block-right">' +
