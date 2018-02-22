@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=2.0, user-scalable=no, width=device-width" name="viewport">
+    <title>Chats Demo</title>
+
+    <!-- Bootstrap -->
+    <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+<form action="" class="form-horizontal">
+    <div class="modal fade in" tabindex="-1" role="dialog" id="login_block" style="display: block">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Please input user info ...</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nickname" class="col-sm-2 control-label">Nickname</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="nickname" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="connect-socket">Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="left">
+    <div class="user-block">
+
+    </div>
+</div>
+<div class="right">
+    <div class="title">
+        <i class="glyphicon glyphicon-tasks toggle"></i><p>群聊</p>
+    </div>
+    <div class="chat-block">
+        <!--<p class="time-line">10：23</p>-->
+
+    </div>
+    <div class="form-horizontal">
+        <div class="input-group input-block">
+            <input type="text" id="input_message" class="form-control" aria-label="..." placeholder="please input something in there....">
+            <div class="input-group-btn" >
+                <button type="button" class="btn btn-default" id="send">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="assets/js/jquery.js"></script>
+<script src="assets/bootstrap/js/bootstrap.min.js"></script>
+
+<script src="assets/js/event.js"></script>
+<script src="assets/js/socket.js"></script>
+</body>
+</html>
