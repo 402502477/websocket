@@ -35,16 +35,16 @@ class Socket{
     public function create()
     {
         //创建并返回一个套接字!
-        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)or $this->error('Socket create failed:','socket');
+        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)or $this->storage('error','Socket create failed:');
 
         // 设置IP和端口重用,在重启服务器后能重新使用此端口;
-        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1)or $this->error('Socket set option failed:','socket');
+        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1)or $this->storage('error','Socket set option failed:');
 
         //给套接字绑定名字
-        socket_bind($this->socket, $this->host, $this->port)or $this->error('Socket set option failed:','socket');
+        socket_bind($this->socket, $this->host, $this->port)or $this->storage('error','Socket set option failed:');
 
         //监听套接字上的连接
-        socket_listen($this->socket)or $this->error('Socket set option failed:','socket');
+        socket_listen($this->socket)or $this->storage('error','Socket set option failed:');
 
         //将创建完毕的套接字放进数组
         $this->sockets[0] = ['resource' => $this->socket];
@@ -67,7 +67,7 @@ class Socket{
             $select_res = socket_select($chanel,$write,$except,0,10);
             if($select_res === false)
             {
-                $this->error('Socket select failed : ','socket');
+                $this->storage('error','Socket select failed : ');
             }
 
 
@@ -84,7 +84,7 @@ class Socket{
                 $res = socket_getpeername($new_socket, $ip);
                 if($res)
                 {
-                    $this->runtime($ip,'online');
+                    $this->storage('run',$ip.'online');
                     //为新加入的socket绑定基本信息
                     $this->sockets[(int)$new_socket]['resource'] = $new_socket;
                     $this->sockets[(int)$new_socket]['ip'] = $ip;
@@ -99,9 +99,9 @@ class Socket{
                 $res = $this->send_message($response);
                 if($res !== true)
                 {
-                    $this->error('Send message failed : ','socket');
+                    $this->storage('error','Send message failed : ');
                 }else{
-                    $this->runtime('Push message succeed','Send message');
+                    $this->storage('runtime','Push message succeed :'.json_encode($response));
                 }
                 $found_socket = array_search($this->socket, $chanel);
                 unset($chanel[$found_socket]);
@@ -140,9 +140,9 @@ class Socket{
                         $res = $this->send_message($response);
                         if($res !== true)
                         {
-                            $this->error('Send message failed : ','socket');
+                            $this->storage('error','Send message failed : ');
                         }else{
-                            $this->runtime('Send Message','Send message');
+                            $this->storage('run','Send message succeed :'.json_encode($response));
                         }
                     }
 
@@ -165,7 +165,7 @@ class Socket{
                     ];
                     $this->send_message($response);
 
-                    $this->runtime($ip.' disconnected','offline');
+                    $this->storage('runt',$ip.' disconnected');
 
                     $response = [
                         'type'=>'system',
@@ -269,38 +269,34 @@ class Socket{
         socket_write($client_conn,$upgrade,strlen($upgrade));
     }
 
-    /**
-     * @param string $msg
-     * @param string $type
-     */
-    protected function error($msg,$type = null)
+    protected function storage($type,$message)
     {
-        if($type == 'socket')
-        {
-            $code = socket_last_error();
-            if($msg)
-            {
-                $msg .= socket_strerror($code);
-            }else{
-                $msg = socket_strerror($code);
-            }
-        }
         if(!is_dir(__DIR__.'/log'))
         {
             mkdir(__DIR__.'/log');
         }
-        $error_text = '['.date('Y-m-d H:i:s').']'.$msg."\n";
-        file_put_contents(__DIR__.'/log/error.log',$error_text,FILE_APPEND);
 
-    }
-    protected function runtime($msg,$type)
-    {
-        if(!is_dir(__DIR__.'/log'))
+        switch ($type)
         {
-            mkdir(__DIR__.'/log');
+            case 'run';
+                $storage = '['.date('Y-m-d H:i:s').']'.$message."\n";
+                file_put_contents(__DIR__.'/log/runtime.log',$storage,FILE_APPEND);
+            break;
+            case 'error';
+                $code = socket_last_error();
+                if($code)
+                {
+                    if($message)
+                    {
+                        $message .= socket_strerror($code);
+                    }else {
+                        $message = socket_strerror($code);
+                    }
+                }
+                $storage = '['.date('Y-m-d H:i:s').']'.$message."\n";
+                file_put_contents(__DIR__.'/log/error.log',$storage,FILE_APPEND);
+            break;
         }
-        $test = '['.date('Y-m-d H:i:s').']'.$type.':'.$msg."\n";
-        file_put_contents(__DIR__.'/log/runtime.log',$test,FILE_APPEND);
     }
 }
 $config = file_get_contents('config.json');
